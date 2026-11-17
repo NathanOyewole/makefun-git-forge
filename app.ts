@@ -5,6 +5,8 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { ForgeStore, VIEWER_LOGIN, type RepoRec } from './store.ts';
+import { handleMcp } from './mcp.ts';
+import { handleGraphql } from './graphql.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
 /** The single token, from the process environment. Empty means "accept any presented token". */
@@ -163,6 +165,16 @@ async function handle(store: ForgeStore, req: IncomingMessage, res: ServerRespon
   // Everything else on the API surface is authenticated. healthz is the only exception.
   if (!authenticated(req)) {
     unauthorized(res, id);
+    return;
+  }
+
+  // MCP and GraphQL are their own envelopes: let them parse their exact body text.
+  if (path === '/mcp' || path === '/mcp/') {
+    await handleMcp(store, req, res);
+    return;
+  }
+  if (path === '/api/graphql' || path === '/api/graphql/') {
+    await handleGraphql(store, req, res);
     return;
   }
 
