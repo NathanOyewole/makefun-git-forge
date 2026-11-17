@@ -70,6 +70,11 @@ export interface PullRec {
   stamp: string;
 }
 
+export interface GitObjectRec {
+  type: 'commit' | 'tree' | 'blob' | 'tag';
+  data: Buffer;
+}
+
 export interface RepoRec {
   id: number;
   name: string;
@@ -77,6 +82,10 @@ export interface RepoRec {
   description: string;
   private: boolean;
   default_branch: string;
+  /** Raw git objects, keyed by their SHA-1 id; shared by every surface. */
+  objects: Map<string, GitObjectRec>;
+  /** Full smart-HTTP ref names -> object id, authoritative for git operations. */
+  gitRefs: Map<string, string>;
   branches: Map<string, BranchState>;
   labels: Map<string, LabelRec>;
   issues: IssueRec[];
@@ -121,6 +130,8 @@ export class ForgeStore {
       description,
       private: isPrivate,
       default_branch: DEFAULT_BRANCH,
+      objects: new Map<string, GitObjectRec>(),
+      gitRefs: new Map<string, string>(),
       branches: new Map<string, BranchState>(),
       labels: new Map<string, LabelRec>(),
       issues: [],

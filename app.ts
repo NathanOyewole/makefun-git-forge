@@ -7,6 +7,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { ForgeStore, VIEWER_LOGIN, type RepoRec } from './store.ts';
 import { handleMcp } from './mcp.ts';
 import { handleGraphql } from './graphql.ts';
+import { handleGit } from './git.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
 /** The single token, from the process environment. Empty means "accept any presented token". */
@@ -178,7 +179,10 @@ async function handle(store: ForgeStore, req: IncomingMessage, res: ServerRespon
     return;
   }
 
-  // Non-API routes are JSON 404 (git smart HTTP is a later phase).
+  // Git smart HTTP owns its own binary envelopes; it sits before the JSON 404.
+  if (await handleGit(store, req, res, path, query)) return;
+
+  // Non-API routes are JSON 404.
   if (!path.startsWith('/api/v3')) {
     notFound(res, id);
     return;
